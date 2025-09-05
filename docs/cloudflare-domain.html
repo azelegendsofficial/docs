@@ -1,0 +1,1287 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Setup Domain di Cloudflare - SpaceStore Docs</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&display=swap');
+        
+        :root {
+            --primary-green: #00ff88;
+            --primary-blue: #0066ff;
+            --primary-purple: #8b5cf6;
+            --dark-bg: #0a0a0f;
+            --darker-bg: #050507;
+            --glass-bg: rgba(255, 255, 255, 0.05);
+            --border-color: rgba(255, 255, 255, 0.1);
+            --text-primary: #ffffff;
+            --text-secondary: #94a3b8;
+            --accent-gradient: linear-gradient(135deg, var(--primary-green) 0%, var(--primary-blue) 50%, var(--primary-purple) 100%);
+            --success-color: #22c55e;
+            --warning-color: #fbbf24;
+            --error-color: #ef4444;
+            --info-color: #0ea5e9;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background: var(--dark-bg);
+            color: var(--text-primary);
+            line-height: 1.6;
+        }
+
+        .bg-pattern {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -1;
+            background: 
+                radial-gradient(circle at 20% 20%, rgba(0, 255, 136, 0.15) 0%, transparent 50%),
+                radial-gradient(circle at 80% 80%, rgba(0, 102, 255, 0.15) 0%, transparent 50%),
+                var(--dark-bg);
+        }
+
+        /* Navigation */
+        nav {
+            position: fixed;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: var(--glass-bg);
+            backdrop-filter: blur(20px);
+            border: 1px solid var(--border-color);
+            border-radius: 20px;
+            z-index: 1000;
+            padding: 1rem 2rem;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+        }
+
+        .nav-container {
+            display: flex;
+            align-items: center;
+            gap: 3rem;
+        }
+
+        .logo {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 1.25rem;
+            font-weight: 700;
+            background: var(--accent-gradient);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            text-decoration: none;
+        }
+
+        .nav-links {
+            display: flex;
+            list-style: none;
+            gap: 1.5rem;
+        }
+
+        .nav-links a {
+            color: var(--text-secondary);
+            text-decoration: none;
+            font-weight: 500;
+            transition: color 0.3s ease;
+            padding: 0.5rem 1rem;
+            border-radius: 12px;
+        }
+
+        .nav-links a:hover {
+            color: var(--primary-green);
+        }
+
+        /* Main Content */
+        .main-content {
+            display: grid;
+            grid-template-columns: 300px 1fr;
+            gap: 3rem;
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 120px 2rem 80px;
+        }
+
+        /* Sidebar */
+        .sidebar {
+            position: sticky;
+            top: 120px;
+            height: fit-content;
+        }
+
+        .sidebar-content {
+            background: var(--glass-bg);
+            backdrop-filter: blur(20px);
+            border: 1px solid var(--border-color);
+            border-radius: 20px;
+            padding: 2rem;
+        }
+
+        .sidebar h3 {
+            font-size: 1.1rem;
+            font-weight: 600;
+            margin-bottom: 1rem;
+            color: var(--primary-green);
+        }
+
+        .toc {
+            list-style: none;
+        }
+
+        .toc li {
+            margin-bottom: 0.5rem;
+        }
+
+        .toc a {
+            color: var(--text-secondary);
+            text-decoration: none;
+            font-size: 0.9rem;
+            transition: color 0.3s ease;
+            padding: 0.5rem;
+            display: block;
+            border-radius: 8px;
+        }
+
+        .toc a:hover {
+            color: var(--primary-green);
+            background: rgba(255, 255, 255, 0.05);
+        }
+
+        .toc .active {
+            color: var(--primary-green);
+            background: rgba(0, 255, 136, 0.1);
+        }
+
+        /* Article */
+        .article {
+            background: var(--glass-bg);
+            backdrop-filter: blur(20px);
+            border: 1px solid var(--border-color);
+            border-radius: 20px;
+            padding: 3rem;
+        }
+
+        .article-header {
+            margin-bottom: 3rem;
+        }
+
+        .article-meta {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            margin-bottom: 1.5rem;
+            font-size: 0.9rem;
+        }
+
+        .difficulty-badge {
+            padding: 0.25rem 0.75rem;
+            border-radius: 12px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            background: rgba(34, 197, 94, 0.2);
+            color: #22c55e;
+        }
+
+        .reading-time {
+            color: var(--text-secondary);
+        }
+
+        .article h1 {
+            font-size: 3rem;
+            font-weight: 900;
+            margin-bottom: 1rem;
+            background: var(--accent-gradient);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            line-height: 1.1;
+        }
+
+        .article-description {
+            font-size: 1.2rem;
+            color: var(--text-secondary);
+            margin-bottom: 2rem;
+        }
+
+        /* Typography */
+        .article h2 {
+            font-size: 2rem;
+            font-weight: 700;
+            margin: 3rem 0 1.5rem 0;
+            color: var(--primary-green);
+        }
+
+        .article h3 {
+            font-size: 1.5rem;
+            font-weight: 600;
+            margin: 2rem 0 1rem 0;
+            color: var(--text-primary);
+        }
+
+        .article h4 {
+            font-size: 1.2rem;
+            font-weight: 600;
+            margin: 1.5rem 0 1rem 0;
+            color: var(--text-primary);
+        }
+
+        .article p {
+            margin-bottom: 1.5rem;
+            color: var(--text-secondary);
+        }
+
+        .article ul, .article ol {
+            margin: 1.5rem 0;
+            padding-left: 2rem;
+            color: var(--text-secondary);
+        }
+
+        .article li {
+            margin-bottom: 0.5rem;
+        }
+
+        /* Steps */
+        .step {
+            margin: 2rem 0;
+            padding: 2rem;
+            background: var(--darker-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 16px;
+        }
+
+        .step-number {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 32px;
+            height: 32px;
+            background: var(--accent-gradient);
+            border-radius: 50%;
+            color: var(--dark-bg);
+            font-weight: 700;
+            margin-right: 1rem;
+            vertical-align: middle;
+        }
+
+        .step h3 {
+            display: inline;
+            color: var(--text-primary);
+            margin: 0;
+        }
+
+        /* Alert Boxes */
+        .alert {
+            padding: 1.5rem;
+            border-radius: 12px;
+            margin: 1.5rem 0;
+            border-left: 4px solid;
+        }
+
+        .alert-success {
+            background: rgba(34, 197, 94, 0.1);
+            border-color: var(--success-color);
+        }
+
+        .alert-warning {
+            background: rgba(251, 191, 36, 0.1);
+            border-color: var(--warning-color);
+        }
+
+        .alert-error {
+            background: rgba(239, 68, 68, 0.1);
+            border-color: var(--error-color);
+        }
+
+        .alert-info {
+            background: rgba(14, 165, 233, 0.1);
+            border-color: var(--info-color);
+        }
+
+        .alert-title {
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+        }
+
+        /* DNS Records Table */
+        .dns-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 1.5rem 0;
+            background: var(--darker-bg);
+            border-radius: 12px;
+            overflow: hidden;
+            border: 1px solid var(--border-color);
+        }
+
+        .dns-table th {
+            background: var(--glass-bg);
+            padding: 1rem;
+            text-align: left;
+            font-weight: 600;
+            color: var(--primary-green);
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .dns-table td {
+            padding: 1rem;
+            border-bottom: 1px solid var(--border-color);
+            color: var(--text-secondary);
+        }
+
+        .dns-table tr:last-child td {
+            border-bottom: none;
+        }
+
+        .dns-table code {
+            background: var(--glass-bg);
+            padding: 0.25rem 0.5rem;
+            border-radius: 4px;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.8rem;
+        }
+
+        /* Features Grid */
+        .features-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 1.5rem;
+            margin: 2rem 0;
+        }
+
+        .feature-card {
+            background: var(--darker-bg);
+            padding: 2rem;
+            border-radius: 16px;
+            border: 1px solid var(--border-color);
+            text-align: center;
+        }
+
+        .feature-icon {
+            width: 48px;
+            height: 48px;
+            background: var(--accent-gradient);
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 1rem;
+            font-size: 1.5rem;
+        }
+
+        .feature-card h4 {
+            color: var(--primary-green);
+            margin-bottom: 0.5rem;
+        }
+
+        /* Screenshot placeholder */
+        .screenshot {
+            background: var(--darker-bg);
+            border: 2px dashed var(--border-color);
+            border-radius: 12px;
+            padding: 3rem;
+            text-align: center;
+            margin: 2rem 0;
+            color: var(--text-secondary);
+        }
+
+        .screenshot-icon {
+            font-size: 3rem;
+            margin-bottom: 1rem;
+            opacity: 0.5;
+        }
+
+        /* Navigation Buttons */
+        .nav-buttons {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 4rem;
+            padding-top: 2rem;
+            border-top: 1px solid var(--border-color);
+        }
+
+        .nav-button {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 1rem 1.5rem;
+            background: var(--glass-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            text-decoration: none;
+            color: var(--text-primary);
+            font-weight: 500;
+            transition: all 0.3s ease;
+        }
+
+        .nav-button:hover {
+            background: var(--primary-green);
+            color: var(--dark-bg);
+            transform: translateY(-2px);
+        }
+
+        /* Mobile */
+        @media (max-width: 1024px) {
+            .main-content {
+                grid-template-columns: 1fr;
+                padding: 100px 1rem 60px;
+            }
+
+            .sidebar {
+                position: static;
+                order: 2;
+            }
+
+            .article {
+                padding: 2rem;
+            }
+
+            .article h1 {
+                font-size: 2.5rem;
+            }
+
+            nav {
+                top: 10px;
+                left: 10px;
+                right: 10px;
+                transform: none;
+            }
+
+            .nav-links {
+                display: none;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .article {
+                padding: 1.5rem;
+            }
+
+            .article h1 {
+                font-size: 2rem;
+            }
+
+            .article h2 {
+                font-size: 1.5rem;
+            }
+
+            .features-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .nav-buttons {
+                flex-direction: column;
+                gap: 1rem;
+            }
+
+            .dns-table {
+                font-size: 0.9rem;
+            }
+
+            .dns-table th,
+            .dns-table td {
+                padding: 0.75rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="bg-pattern"></div>
+
+    <!-- Navigation -->
+    <nav>
+        <div class="nav-container">
+            <a href="/" class="logo">🚀 SpaceStore Docs</a>
+            <ul class="nav-links">
+                <li><a href="/">Home</a></li>
+                <li><a href="#guides">Guides</a></li>
+                <li><a href="#api">API</a></li>
+                <li><a href="https://discord.gg/spacestore">Support</a></li>
+            </ul>
+        </div>
+    </nav>
+
+    <div class="main-content">
+        <!-- Sidebar -->
+        <aside class="sidebar">
+            <div class="sidebar-content">
+                <h3>🌐 Table of Contents</h3>
+                <ul class="toc">
+                    <li><a href="#overview">Overview</a></li>
+                    <li><a href="#benefits">Keuntungan Cloudflare</a></li>
+                    <li><a href="#prerequisites">Prerequisites</a></li>
+                    <li><a href="#account-setup">Setup Account</a></li>
+                    <li><a href="#add-domain">Tambah Domain</a></li>
+                    <li><a href="#dns-records">DNS Records</a></li>
+                    <li><a href="#nameservers">Change Nameservers</a></li>
+                    <li><a href="#ssl-setup">SSL/TLS Setup</a></li>
+                    <li><a href="#speed-optimization">Speed Optimization</a></li>
+                    <li><a href="#security-settings">Security Settings</a></li>
+                    <li><a href="#verification">Verification</a></li>
+                    <li><a href="#troubleshooting">Troubleshooting</a></li>
+                </ul>
+            </div>
+        </aside>
+
+        <!-- Main Article -->
+        <article class="article">
+            <header class="article-header">
+                <div class="article-meta">
+                    <span class="difficulty-badge">Beginner</span>
+                    <span class="reading-time">⏱️ 12 min read</span>
+                    <span class="reading-time">📅 Updated Dec 2024</span>
+                </div>
+                <h1>🌐 Setup Domain di Cloudflare</h1>
+                <p class="article-description">
+                    Panduan lengkap untuk menghubungkan domain Anda dengan Cloudflare DNS, mengaktifkan SSL certificate gratis, dan mengoptimalkan performa website dengan CDN global.
+                </p>
+            </header>
+
+            <section id="overview">
+                <h2>📖 Overview</h2>
+                <p>Cloudflare adalah layanan Content Delivery Network (CDN) dan DNS yang menyediakan keamanan, performa, dan reliabilitas untuk website Anda. Tutorial ini akan memandu Anda dalam mengonfigurasi domain untuk mendapatkan manfaat maksimal dari layanan Cloudflare.</p>
+
+                <div class="alert alert-info">
+                    <div class="alert-title">🚀 Apa yang Akan Anda Pelajari</div>
+                    <ul>
+                        <li>Setup account Cloudflare dan menambahkan domain</li>
+                        <li>Konfigurasi DNS records untuk berbagai keperluan</li>
+                        <li>Mengubah nameservers di registrar domain</li>
+                        <li>Setup SSL/TLS certificate gratis</li>
+                        <li>Optimasi kecepatan dengan CDN</li>
+                        <li>Pengaturan keamanan dasar</li>
+                    </ul>
+                </div>
+            </section>
+
+            <section id="benefits">
+                <h2>✨ Keuntungan Cloudflare</h2>
+                
+                <div class="features-grid">
+                    <div class="feature-card">
+                        <div class="feature-icon">🚀</div>
+                        <h4>CDN Global</h4>
+                        <p>Network 200+ data center di seluruh dunia untuk loading time yang cepat</p>
+                    </div>
+                    
+                    <div class="feature-card">
+                        <div class="feature-icon">🔒</div>
+                        <h4>SSL Gratis</h4>
+                        <p>SSL certificate otomatis tanpa biaya tambahan dengan auto-renewal</p>
+                    </div>
+                    
+                    <div class="feature-card">
+                        <div class="feature-icon">🛡️</div>
+                        <h4>DDoS Protection</h4>
+                        <p>Perlindungan otomatis dari serangan DDoS dan bot malicious</p>
+                    </div>
+                    
+                    <div class="feature-card">
+                        <div class="feature-icon">📊</div>
+                        <h4>Analytics</h4>
+                        <p>Dashboard analytics lengkap untuk monitoring traffic dan performa</p>
+                    </div>
+                    
+                    <div class="feature-card">
+                        <div class="feature-icon">⚡</div>
+                        <h4>Optimasi Otomatis</h4>
+                        <p>Minifikasi CSS/JS, kompresi image, dan caching otomatis</p>
+                    </div>
+                    
+                    <div class="feature-card">
+                        <div class="feature-icon">🌍</div>
+                        <h4>DNS Cepat</h4>
+                        <p>DNS resolution tercepat di dunia dengan uptime 100%</p>
+                    </div>
+                </div>
+            </section>
+
+            <section id="prerequisites">
+                <h2>📋 Prerequisites</h2>
+                
+                <div class="alert alert-warning">
+                    <div class="alert-title">⚠️ Yang Anda Butuhkan</div>
+                    <ul>
+                        <li><strong>Domain aktif</strong> - Domain yang sudah terdaftar di registrar manapun</li>
+                        <li><strong>Akses ke registrar</strong> - Login ke panel domain registrar untuk mengubah nameserver</li>
+                        <li><strong>Server/hosting</strong> - VPS atau hosting dengan IP address</li>
+                        <li><strong>Email aktif</strong> - Untuk verifikasi account Cloudflare</li>
+                    </ul>
+                </div>
+                
+                <p>Tutorial ini akan menggunakan domain contoh <code>example.com</code> dan IP server <code>103.XXX.XXX.XXX</code>. Ganti dengan domain dan IP server Anda yang sebenarnya.</p>
+            </section>
+
+            <section id="account-setup">
+                <h2>👤 Setup Account Cloudflare</h2>
+                
+                <div class="step">
+                    <h3><span class="step-number">1</span>Buat Account Cloudflare</h3>
+                    <p>Kunjungi <strong>cloudflare.com</strong> dan buat account baru:</p>
+                    <ol>
+                        <li>Klik tombol <strong>"Sign Up"</strong></li>
+                        <li>Masukkan email dan password yang kuat</li>
+                        <li>Verifikasi email yang dikirim ke inbox Anda</li>
+                        <li>Login ke dashboard Cloudflare</li>
+                    </ol>
+                    
+                    <div class="screenshot">
+                        <div class="screenshot-icon">📸</div>
+                        <p>Dashboard Cloudflare akan tampil kosong karena belum ada domain yang ditambahkan</p>
+                    </div>
+                </div>
+            </section>
+
+            <section id="add-domain">
+                <h2>➕ Menambahkan Domain ke Cloudflare</h2>
+                
+                <div class="step">
+                    <h3><span class="step-number">2</span>Add Site (Domain)</h3>
+                    <p>Tambahkan domain Anda ke Cloudflare:</p>
+                    
+                    <ol>
+                        <li>Di dashboard Cloudflare, klik <strong>"Add Site"</strong></li>
+                        <li>Masukkan nama domain Anda (contoh: <code>example.com</code>)</li>
+                        <li>Klik <strong>"Add Site"</strong></li>
+                        <li>Pilih plan <strong>"Free"</strong> (sudah sangat cukup untuk sebagian besar kebutuhan)</li>
+                        <li>Klik <strong>"Continue"</strong></li>
+                    </ol>
+                    
+                    <div class="alert alert-info">
+                        <div class="alert-title">💡 Tips Pemilihan Plan</div>
+                        <p>Plan Free Cloudflare sudah mencakup:</p>
+                        <ul>
+                            <li>Bandwidth unlimited</li>
+                            <li>SSL certificate gratis</li>
+                            <li>DDoS protection dasar</li>
+                            <li>CDN global</li>
+                            <li>Analytics dasar</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <div class="step">
+                    <h3><span class="step-number">3</span>Review DNS Records</h3>
+                    <p>Cloudflare akan melakukan scan otomatis untuk mendeteksi DNS records yang sudah ada:</p>
+                    
+                    <ul>
+                        <li>Review records yang terdeteksi</li>
+                        <li>Pastikan record A untuk domain utama menunjuk ke IP server Anda</li>
+                        <li>Tambahkan record yang belum terdeteksi (akan dijelaskan di langkah berikutnya)</li>
+                        <li>Klik <strong>"Continue"</strong></li>
+                    </ul>
+                </div>
+            </section>
+
+            <section id="dns-records">
+                <h2>🔧 Konfigurasi DNS Records</h2>
+                
+                <div class="step">
+                    <h3><span class="step-number">4</span>Setup DNS Records Dasar</h3>
+                    <p>Konfigurasi DNS records untuk website dan subdomain:</p>
+                    
+                    <table class="dns-table">
+                        <thead>
+                            <tr>
+                                <th>Type</th>
+                                <th>Name</th>
+                                <th>Content/Target</th>
+                                <th>Proxy Status</th>
+                                <th>Keterangan</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td><code>A</code></td>
+                                <td><code>@</code></td>
+                                <td><code>103.XXX.XXX.XXX</code></td>
+                                <td>🟠 Proxied</td>
+                                <td>Domain utama (example.com)</td>
+                            </tr>
+                            <tr>
+                                <td><code>A</code></td>
+                                <td><code>www</code></td>
+                                <td><code>103.XXX.XXX.XXX</code></td>
+                                <td>🟠 Proxied</td>
+                                <td>Subdomain www</td>
+                            </tr>
+                            <tr>
+                                <td><code>A</code></td>
+                                <td><code>panel</code></td>
+                                <td><code>103.XXX.XXX.XXX</code></td>
+                                <td>🟠 Proxied</td>
+                                <td>Panel/dashboard</td>
+                            </tr>
+                            <tr>
+                                <td><code>A</code></td>
+                                <td><code>api</code></td>
+                                <td><code>103.XXX.XXX.XXX</code></td>
+                                <td>🟠 Proxied</td>
+                                <td>API endpoint</td>
+                            </tr>
+                            <tr>
+                                <td><code>CNAME</code></td>
+                                <td><code>ftp</code></td>
+                                <td><code>@</code></td>
+                                <td>⚫ DNS Only</td>
+                                <td>FTP server</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                    
+                    <div class="alert alert-warning">
+                        <div class="alert-title">⚠️ Proxy Status Explained</div>
+                        <ul>
+                            <li><strong>🟠 Proxied:</strong> Traffic melalui Cloudflare (CDN + Security)</li>
+                            <li><strong>⚫ DNS Only:</strong> Direct ke server (untuk FTP, SSH, game servers)</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <div class="step">
+                    <h3><span class="step-number">5</span>Menambahkan DNS Record</h3>
+                    <p>Untuk menambah DNS record baru:</p>
+                    
+                    <ol>
+                        <li>Di dashboard domain, klik tab <strong>"DNS"</strong></li>
+                        <li>Klik tombol <strong>"Add record"</strong></li>
+                        <li>Pilih <strong>Type</strong> (A, AAAA, CNAME, MX, TXT, dll)</li>
+                        <li>Masukkan <strong>Name</strong> (subdomain atau @ untuk root domain)</li>
+                        <li>Masukkan <strong>Content</strong> (IP address atau target)</li>
+                        <li>Set <strong>Proxy status</strong> sesuai kebutuhan</li>
+                        <li>Klik <strong>"Save"</strong></li>
+                    </ol>
+                </div>
+
+                <div class="step">
+                    <h3><span class="step-number">6</span>Records untuk Game Servers</h3>
+                    <p>Untuk game servers, gunakan DNS Only mode:</p>
+                    
+                    <table class="dns-table">
+                        <thead>
+                            <tr>
+                                <th>Type</th>
+                                <th>Name</th>
+                                <th>Content</th>
+                                <th>Proxy Status</th>
+                                <th>Port/Game</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td><code>A</code></td>
+                                <td><code>mc</code></td>
+                                <td><code>103.XXX.XXX.XXX</code></td>
+                                <td>⚫ DNS Only</td>
+                                <td>Minecraft</td>
+                            </tr>
+                            <tr>
+                                <td><code>A</code></td>
+                                <td><code>fivem</code></td>
+                                <td><code>103.XXX.XXX.XXX</code></td>
+                                <td>⚫ DNS Only</td>
+                                <td>FiveM GTA V</td>
+                            </tr>
+                            <tr>
+                                <td><code>A</code></td>
+                                <td><code>node1</code></td>
+                                <td><code>103.XXX.XXX.XXX</code></td>
+                                <td>⚫ DNS Only</td>
+                                <td>Pterodactyl Node</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                    
+                    <div class="alert alert-info">
+                        <div class="alert-title">🎮 Game Server Tips</div>
+                        <p>Game servers harus menggunakan <strong>DNS Only</strong> karena:</p>
+                        <ul>
+                            <li>Cloudflare proxy hanya mendukung HTTP/HTTPS traffic</li>
+                            <li>Game servers menggunakan protokol TCP/UDP custom</li>
+                            <li>Direct connection diperlukan untuk latency rendah</li>
+                        </ul>
+                    </div>
+                </div>
+            </section>
+
+            <section id="nameservers">
+                <h2>🔄 Mengubah Nameservers</h2>
+                
+                <div class="step">
+                    <h3><span class="step-number">7</span>Mendapatkan Cloudflare Nameservers</h3>
+                    <p>Setelah menambahkan domain, Cloudflare akan memberikan 2 nameserver custom:</p>
+                    
+                    <div class="alert alert-info">
+                        <div class="alert-title">📝 Contoh Cloudflare Nameservers</div>
+                        <ul>
+                            <li><code>aron.ns.cloudflare.com</code></li>
+                            <li><code>kate.ns.cloudflare.com</code></li>
+                        </ul>
+                        <p><em>Nameserver Anda akan berbeda - catat yang diberikan oleh Cloudflare</em></p>
+                    </div>
+                </div>
+
+                <div class="step">
+                    <h3><span class="step-number">8</span>Update Nameservers di Registrar</h3>
+                    <p>Login ke panel registrar domain Anda dan ubah nameservers:</p>
+                    
+                    <h4>🌐 Panduan Per Registrar:</h4>
+                    
+                    <div class="features-grid">
+                        <div class="feature-card">
+                            <div class="feature-icon">🇮🇩</div>
+                            <h4>Niagahoster</h4>
+                            <p>Member Area → Domain → Kelola Domain → Name Server</p>
+                        </div>
+                        
+                        <div class="feature-card">
+                            <div class="feature-icon">🇮🇩</div>
+                            <h4>Rumahweb</h4>
+                            <p>Client Area → Domain → Manage Domain → Nameservers</p>
+                        </div>
+                        
+                        <div class="feature-card">
+                            <div class="feature-icon">🌍</div>
+                            <h4>Namecheap</h4>
+                            <p>Dashboard → Domain List → Manage → Nameservers</p>
+                        </div>
+                        
+                        <div class="feature-card">
+                            <div class="feature-icon">🌍</div>
+                            <h4>GoDaddy</h4>
+                            <p>My Products → DNS → Nameservers → Change</p>
+                        </div>
+                    </div>
+                    
+                    <div class="alert alert-warning">
+                        <div class="alert-title">⏰ Waktu Propagasi</div>
+                        <p>Perubahan nameserver membutuhkan waktu propagasi:</p>
+                        <ul>
+                            <li><strong>Minimum:</strong> 2-6 jam</li>
+                            <li><strong>Maksimum:</strong> 24-48 jam</li>
+                            <li><strong>Rata-rata:</strong> 4-8 jam</li>
+                        </ul>
+                    </div>
+                </div>
+            </section>
+
+            <section id="ssl-setup">
+                <h2>🔒 SSL/TLS Configuration</h2>
+                
+                <div class="step">
+                    <h3><span class="step-number">9</span>Aktifkan SSL/TLS</h3>
+                    <p>Setup SSL certificate gratis dari Cloudflare:</p>
+                    
+                    <ol>
+                        <li>Di dashboard domain, klik tab <strong>"SSL/TLS"</strong></li>
+                        <li>Di bagian <strong>"Overview"</strong>, pastikan SSL/TLS encryption mode diset ke <strong>"Full (strict)"</strong></li>
+                        <li>Klik tab <strong>"Edge Certificates"</strong></li>
+                        <li>Pastikan <strong>"Always Use HTTPS"</strong> aktif (ON)</li>
+                        <li>Aktifkan <strong>"HTTP Strict Transport Security (HSTS)"</strong></li>
+                    </ol>
+                    
+                    <table class="dns-table">
+                        <thead>
+                            <tr>
+                                <th>SSL Mode</th>
+                                <th>Security Level</th>
+                                <th>Keterangan</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td><code>Off</code></td>
+                                <td>❌ None</td>
+                                <td>Tidak ada enkripsi</td>
+                            </tr>
+                            <tr>
+                                <td><code>Flexible</code></td>
+                                <td>🔒 Low</td>
+                                <td>Cloudflare ke visitor terenkripsi</td>
+                            </tr>
+                            <tr>
+                                <td><code>Full</code></td>
+                                <td>🔒🔒 Medium</td>
+                                <td>End-to-end encryption</td>
+                            </tr>
+                            <tr>
+                                <td><code>Full (strict)</code></td>
+                                <td>🔒🔒🔒 High</td>
+                                <td>Valid SSL certificate required</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                    
+                    <div class="alert alert-success">
+                        <div class="alert-title">🎉 Rekomendasi</div>
+                        <p>Gunakan <strong>"Full (strict)"</strong> untuk keamanan maksimal. Pastikan server Anda memiliki SSL certificate valid (bisa dari Let's Encrypt).</p>
+                    </div>
+                </div>
+
+                <div class="step">
+                    <h3><span class="step-number">10</span>Setup Origin Certificates</h3>
+                    <p>Untuk mode "Full (strict)", buat Origin Certificate:</p>
+                    
+                    <ol>
+                        <li>Di tab <strong>"Origin Server"</strong></li>
+                        <li>Klik <strong>"Create Certificate"</strong></li>
+                        <li>Pilih <strong>"Let Cloudflare generate a private key and a CSR"</strong></li>
+                        <li>Masukkan domain dan subdomain (contoh: <code>*.example.com, example.com</code>)</li>
+                        <li>Pilih validity <strong>"15 years"</strong></li>
+                        <li>Klik <strong>"Create"</strong></li>
+                        <li>Download dan install certificate di server Anda</li>
+                    </ol>
+                </div>
+            </section>
+
+            <section id="speed-optimization">
+                <h2>⚡ Speed Optimization</h2>
+                
+                <div class="step">
+                    <h3><span class="step-number">11</span>Caching Configuration</h3>
+                    <p>Optimasi caching untuk performa maksimal:</p>
+                    
+                    <ol>
+                        <li>Klik tab <strong>"Caching"</strong></li>
+                        <li>Di <strong>"Configuration"</strong>:
+                            <ul>
+                                <li>Caching Level: <strong>"Standard"</strong></li>
+                                <li>Browser Cache TTL: <strong>"4 hours"</strong></li>
+                                <li>Always Online™: <strong>"On"</strong></li>
+                            </ul>
+                        </li>
+                        <li>Di <strong>"Cache Rules"</strong>, buat rules untuk static assets:
+                            <ul>
+                                <li>Match: <code>*.css, *.js, *.png, *.jpg, *.jpeg, *.gif, *.ico</code></li>
+                                <li>Cache Everything</li>
+                                <li>Edge TTL: <strong>"1 month"</strong></li>
+                            </ul>
+                        </li>
+                    </ol>
+                </div>
+
+                <div class="step">
+                    <h3><span class="step-number">12</span>Speed Optimizations</h3>
+                    <p>Aktifkan fitur speed optimization:</p>
+                    
+                    <ol>
+                        <li>Klik tab <strong>"Speed"</strong></li>
+                        <li>Di <strong>"Optimization"</strong>:
+                            <ul>
+                                <li><strong>Auto Minify:</strong> Aktifkan untuk CSS, JavaScript, HTML</li>
+                                <li><strong>Brotli:</strong> On (kompresi yang lebih efisien dari gzip)</li>
+                                <li><strong>Early Hints:</strong> On (HTTP/2 push optimization)</li>
+                            </ul>
+                        </li>
+                        <li>Di <strong>"Polish"</strong> (untuk Pro plan):
+                            <ul>
+                                <li>Image optimization otomatis</li>
+                                <li>WebP conversion</li>
+                            </ul>
+                        </li>
+                    </ol>
+                    
+                    <div class="features-grid">
+                        <div class="feature-card">
+                            <div class="feature-icon">🗜️</div>
+                            <h4>Auto Minify</h4>
+                            <p>Menghilangkan whitespace dan komentar dari CSS/JS</p>
+                        </div>
+                        
+                        <div class="feature-card">
+                            <div class="feature-icon">📦</div>
+                            <h4>Brotli Compression</h4>
+                            <p>Kompresi 20-25% lebih efisien dari gzip</p>
+                        </div>
+                        
+                        <div class="feature-card">
+                            <div class="feature-icon">⚡</div>
+                            <h4>Early Hints</h4>
+                            <p>Browser mulai load resources sebelum HTML selesai</p>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <section id="security-settings">
+                <h2>🛡️ Security Settings</h2>
+                
+                <div class="step">
+                    <h3><span class="step-number">13</span>Firewall Configuration</h3>
+                    <p>Setup firewall rules untuk melindungi website:</p>
+                    
+                    <ol>
+                        <li>Klik tab <strong>"Security"</strong></li>
+                        <li>Di <strong>"Settings"</strong>:
+                            <ul>
+                                <li><strong>Security Level:</strong> Medium (untuk keseimbangan)</li>
+                                <li><strong>Challenge Passage:</strong> 30 minutes</li>
+                                <li><strong>Always Use HTTPS:</strong> On</li>
+                            </ul>
+                        </li>
+                        <li>Di <strong>"Bot Fight Mode"</strong>: Aktifkan untuk proteksi bot dasar</li>
+                    </ol>
+                </div>
+
+                <div class="step">
+                    <h3><span class="step-number">14</span>Rate Limiting (Opsional)</h3>
+                    <p>Setup rate limiting untuk mencegah spam dan abuse:</p>
+                    
+                    <div class="alert alert-info">
+                        <div class="alert-title">🔧 Rate Limiting Rules</div>
+                        <p>Contoh rules yang berguna:</p>
+                        <ul>
+                            <li><strong>Login protection:</strong> Max 5 requests/minute ke <code>/login</code></li>
+                            <li><strong>API protection:</strong> Max 100 requests/hour ke <code>/api/*</code></li>
+                            <li><strong>Contact form:</strong> Max 2 requests/hour dari IP yang sama</li>
+                        </ul>
+                    </div>
+                </div>
+            </section>
+
+            <section id="verification">
+                <h2>✅ Verification & Testing</h2>
+                
+                <div class="step">
+                    <h3><span class="step-number">15</span>Verifikasi DNS Propagation</h3>
+                    <p>Pastikan DNS sudah terpropagasi dengan tools online:</p>
+                    
+                    <div class="features-grid">
+                        <div class="feature-card">
+                            <div class="feature-icon">🔍</div>
+                            <h4>whatsmydns.net</h4>
+                            <p>Check DNS propagation global</p>
+                        </div>
+                        
+                        <div class="feature-card">
+                            <div class="feature-icon">🌐</div>
+                            <h4>dnschecker.org</h4>
+                            <p>Multi-location DNS lookup</p>
+                        </div>
+                        
+                        <div class="feature-card">
+                            <div class="feature-icon">⚡</div>
+                            <h4>dig command</h4>
+                            <p><code>dig @8.8.8.8 yourdomain.com</code></p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="step">
+                    <h3><span class="step-number">16</span>Test Website Performance</h3>
+                    <p>Uji performa website dengan tools berikut:</p>
+                    
+                    <ul>
+                        <li><strong>GTmetrix:</strong> Performance dan optimization score</li>
+                        <li><strong>PageSpeed Insights:</strong> Google's performance analysis</li>
+                        <li><strong>Pingdom:</strong> Load time dari berbagai lokasi</li>
+                        <li><strong>SSL Labs:</strong> Test SSL configuration (ssllabs.com/ssltest)</li>
+                    </ul>
+                    
+                    <div class="alert alert-success">
+                        <div class="alert-title">🎯 Target Performance</div>
+                        <p>Dengan Cloudflare, target yang realistis:</p>
+                        <ul>
+                            <li><strong>Load time:</strong> <2 seconds</li>
+                            <li><strong>GTmetrix Grade:</strong> A/A</li>
+                            <li><strong>PageSpeed Score:</strong> >90</li>
+                            <li><strong>SSL Rating:</strong> A+ (SSL Labs)</li>
+                        </ul>
+                    </div>
+                </div>
+            </section>
+
+            <section id="troubleshooting">
+                <h2>🔧 Troubleshooting</h2>
+                
+                <div class="alert alert-error">
+                    <div class="alert-title">🚨 Common Issues</div>
+                    <p>Masalah umum dan solusinya:</p>
+                </div>
+
+                <h3>❌ Website Tidak Bisa Diakses</h3>
+                <div class="step">
+                    <h4>Kemungkinan Penyebab:</h4>
+                    <ul>
+                        <li>DNS belum propagasi (tunggu 24-48 jam)</li>
+                        <li>DNS record salah (cek A record menunjuk ke IP yang benar)</li>
+                        <li>Server down (cek status server)</li>
+                    </ul>
+                    
+                    <h4>Solusi:</h4>
+                    <ol>
+                        <li>Cek DNS propagation di whatsmydns.net</li>
+                        <li>Verifikasi A record di Cloudflare DNS tab</li>
+                        <li>Test direct IP access (bypass Cloudflare)</li>
+                        <li>Cek server logs untuk error</li>
+                    </ol>
+                </div>
+
+                <h3>🔒 SSL Certificate Error</h3>
+                <div class="step">
+                    <h4>Error "Your connection is not private":</h4>
+                    <ul>
+                        <li>SSL mode tidak sesuai dengan konfigurasi server</li>
+                        <li>Origin certificate belum diinstall</li>
+                        <li>Mixed content (HTTP resources di HTTPS page)</li>
+                    </ul>
+                    
+                    <h4>Solusi:</h4>
+                    <ol>
+                        <li>Pastikan SSL mode di Cloudflare sesuai:
+                            <ul>
+                                <li><strong>Flexible:</strong> Jika server tidak punya SSL</li>
+                                <li><strong>Full:</strong> Jika server punya self-signed SSL</li>
+                                <li><strong>Full (strict):</strong> Jika server punya valid SSL</li>
+                            </ul>
+                        </li>
+                        <li>Install Origin Certificate dari Cloudflare</li>
+                        <li>Fix mixed content warnings</li>
+                    </ol>
+                </div>
+
+                <h3>🐌 Website Lambat</h3>
+                <div class="step">
+                    <h4>Optimasi yang Bisa Dilakukan:</h4>
+                    <ol>
+                        <li>Pastikan caching rules aktif</li>
+                        <li>Aktifkan Brotli compression</li>
+                        <li>Enable Auto Minify untuk CSS/JS</li>
+                        <li>Optimasi images di server</li>
+                        <li>Review Page Rules untuk bypass cache pada dynamic content</li>
+                    </ol>
+                </div>
+
+                <h3>🚫 502/504 Bad Gateway Error</h3>
+                <div class="step">
+                    <h4>Penyebab dan Solusi:</h4>
+                    <ul>
+                        <li><strong>Server overload:</strong> Scale up server resources</li>
+                        <li><strong>Wrong origin server:</strong> Cek A record menunjuk ke IP yang benar</li>
+                        <li><strong>Firewall blocking Cloudflare:</strong> Whitelist Cloudflare IP ranges</li>
+                        <li><strong>Server software issue:</strong> Restart web server (nginx/apache)</li>
+                    </ul>
+                </div>
+
+                <div class="alert alert-info">
+                    <div class="alert-title">📞 Butuh Bantuan Lebih Lanjut?</div>
+                    <p>Jika masih mengalami kendala:</p>
+                    <ul>
+                        <li><strong>Cloudflare Community:</strong> community.cloudflare.com</li>
+                        <li><strong>Cloudflare Docs:</strong> developers.cloudflare.com</li>
+                        <li><strong>SpaceStore Support:</strong> Discord atau support ticket</li>
+                    </ul>
+                </div>
+            </section>
+
+            <div class="alert alert-success">
+                <div class="alert-title">🎉 Setup Complete!</div>
+                <p>Selamat! Domain Anda sudah berhasil dikonfigurasi dengan Cloudflare. Website Anda sekarang mendapatkan:</p>
+                <ul>
+                    <li>✅ SSL certificate gratis dengan auto-renewal</li>
+                    <li>✅ CDN global untuk loading speed yang cepat</li>
+                    <li>✅ DDoS protection otomatis</li>
+                    <li>✅ Analytics dan monitoring</li>
+                    <li>✅ Optimasi performa otomatis</li>
+                </ul>
+            </div>
+
+            <div class="alert alert-info">
+                <div class="alert-title">📚 Next Steps</div>
+                <p>Langkah selanjutnya yang bisa Anda lakukan:</p>
+                <ul>
+                    <li>Setup Page Rules untuk caching granular</li>
+                    <li>Configure Workers untuk serverless functions</li>
+                    <li>Setup Load Balancing untuk high availability</li>
+                    <li>Monitor analytics dan optimize berdasarkan data</li>
+                    <li>Explore Cloudflare Apps untuk additional features</li>
+                </ul>
+            </div>
+
+            <!-- Navigation Buttons -->
+            <div class="nav-buttons">
+                <a href="/" class="nav-button">
+                    ← Back to Docs
+                </a>
+                <a href="/docs/ssl-certificate.html" class="nav-button">
+                    SSL Certificates →
+                </a>
+            </div>
+        </article>
+    </div>
+
+    <script>
+        // Table of contents active tracking
+        const observer = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    const id = entry.target.getAttribute('id');
+                    
+                    // Remove active class from all links
+                    document.querySelectorAll('.toc a').forEach(link => {
+                        link.classList.remove('active');
+                    });
+                    
+                    // Add active class to current link
+                    const activeLink = document.querySelector(`.toc a[href="#${id}"]`);
+                    if (activeLink) {
+                        activeLink.classList.add('active');
+                    }
+                }
+            });
+        }, { rootMargin: '-20% 0% -80% 0%' });
+
+        // Observe all sections
+        document.querySelectorAll('section[id]').forEach(section => {
+            observer.observe(section);
+        });
+
+        // Smooth scroll for TOC links
+        document.querySelectorAll('.toc a').forEach(link => {
+            link.addEventListener('click', (e) => {
+                e.preventDefault();
+                const target = document.querySelector(link.getAttribute('href'));
+                if (target) {
+                    target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                }
+            });
+        });
+
+        // Navbar scroll effect
+        window.addEventListener('scroll', function() {
+            const navbar = document.querySelector('nav');
+            if (window.scrollY > 50) {
+                navbar.style.background = 'rgba(0, 0, 0, 0.8)';
+            } else {
+                navbar.style.background = 'var(--glass-bg)';
+            }
+        });
+
+        // Add click-to-copy functionality for code elements
+        document.querySelectorAll('code').forEach(code => {
+            if (code.textContent.length > 10) {
+                code.style.cursor = 'pointer';
+                code.title = 'Click to copy';
+                
+                code.addEventListener('click', () => {
+                    navigator.clipboard.writeText(code.textContent).then(() => {
+                        const originalColor = code.style.color;
+                        code.style.color = 'var(--success-color)';
+                        
+                        setTimeout(() => {
+                            code.style.color = originalColor;
+                        }, 1000);
+                    });
+                });
+            }
+        });
+    </script>
+</body>
+</html>
